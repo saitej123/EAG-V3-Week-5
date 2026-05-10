@@ -1,0 +1,251 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>JEE-Solver</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+            mono: ['JetBrains Mono', 'ui-monospace', 'monospace'],
+          },
+        },
+      },
+    };
+  </script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.css" crossorigin="anonymous" />
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.js" crossorigin="anonymous"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/contrib/auto-render.min.js" crossorigin="anonymous"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/static/styles.css?v=5" />
+</head>
+<body class="min-h-screen bg-white text-gray-900 antialiased font-sans relative overflow-x-hidden">
+
+  <!-- Decorative blurs -->
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+
+  <!-- Top progress bar (hidden by default) -->
+  <div id="top-bar" class="fixed top-0 left-0 right-0 h-[3px] z-50 bg-red-100 hidden overflow-hidden">
+    <div class="h-full w-2/5 bg-gradient-to-r from-red-500 to-rose-500 anim-progress"></div>
+  </div>
+
+  <!-- ===== HEADER ===== -->
+  <header class="sticky top-0 z-30 border-b border-gray-200 bg-white/80 backdrop-blur-md">
+    <div class="mx-auto max-w-7xl px-5 py-3 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <!-- Logo: sigma / math icon -->
+        <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-red-500 to-rose-600 flex items-center justify-center shadow-lg shadow-red-200">
+          <svg viewBox="0 0 24 24" class="w-5 h-5 text-white" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="6 4 18 4"/>
+            <polyline points="6 4 12 12 6 20"/>
+            <polyline points="6 20 18 20"/>
+          </svg>
+        </div>
+        <div>
+          <h1 class="text-[15px] font-bold tracking-tight text-gray-900">JEE-Solver</h1>
+          <p class="text-[11px] text-gray-400 font-medium">IIT-JEE Math Reasoning &middot; Gemini</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-3">
+        <button id="qual-btn" class="qual-btn" title="Prompt Qualification">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 11l3 3L22 4"></path>
+            <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"></path>
+          </svg>
+          Prompt Qual
+        </button>
+        <div class="flex items-center gap-1.5 border border-gray-200 rounded-full px-3 py-1.5 text-[11px] text-gray-500">
+          <span id="health-dot" class="w-2 h-2 rounded-full bg-gray-300"></span>
+          <span id="health-text">checking…</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ===== HERO INPUT ===== -->
+  <section class="mx-auto max-w-7xl px-5 pt-8 pb-5 anim-fade-up">
+    <div class="relative rounded-2xl border border-gray-200 bg-white shadow-xl shadow-gray-200/60 overflow-hidden">
+      <!-- Subtle gradient glow -->
+      <div class="absolute inset-0 pointer-events-none bg-gradient-to-br from-red-50/80 via-transparent to-rose-50/40 opacity-60"></div>
+
+      <div class="relative px-6 pt-5 flex items-start justify-between gap-4">
+        <div>
+          <h2 class="text-lg font-bold text-gray-900">Enter your IIT-JEE problem</h2>
+          <p class="text-sm text-gray-500 mt-0.5">Paste text, LaTeX, or an image. Press <kbd class="mx-0.5 px-1.5 py-0.5 text-[10px] bg-gray-100 text-gray-500 border border-gray-200 rounded font-mono">Ctrl+Enter</kbd> to solve.</p>
+        </div>
+        <span id="status-badge" class="shrink-0 inline-flex items-center rounded-full px-3 py-1 text-[11px] font-semibold tracking-wide bg-gray-100 text-gray-400">idle</span>
+      </div>
+
+      <div class="relative px-6 py-5 space-y-4">
+        <!-- Paste target / textarea -->
+        <div id="input-zone" class="relative">
+          <textarea
+            id="question"
+            rows="7"
+            spellcheck="false"
+            placeholder="e.g. Evaluate ∫₀^{π/2} ln(sin x) dx, showing all steps.&#10;&#10;Or paste / drop an image of a JEE problem here…"
+            class="w-full rounded-xl border border-gray-200 bg-gray-50/60 px-4 py-3.5 text-[15px] font-mono leading-relaxed placeholder:text-gray-400 resize-y transition-all duration-200 focus:bg-white focus:outline-none focus:ring-2 focus:ring-red-400/40 focus:border-red-300 min-h-[180px]"
+          ></textarea>
+        </div>
+
+        <!-- Image preview: rendered below the textarea so it cannot hide behind it -->
+        <div id="paste-preview" class="image-preview-card is-hidden" style="display: none;">
+          <img id="preview-img" class="image-preview-img" alt="Uploaded problem preview" />
+          <div class="min-w-0 flex-1">
+            <div class="text-xs font-semibold text-gray-800">Image attached</div>
+            <div class="text-xs text-gray-500 truncate" id="preview-name">pasted image</div>
+          </div>
+          <button id="preview-remove" class="image-preview-remove" title="Remove image" type="button">
+            <svg viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.28 7.22a.75.75 0 00-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 101.06 1.06L10 11.06l1.72 1.72a.75.75 0 101.06-1.06L11.06 10l1.72-1.72a.75.75 0 00-1.06-1.06L10 8.94 8.28 7.22z" clip-rule="evenodd"/></svg>
+          </button>
+        </div>
+
+        <!-- Actions row -->
+        <div class="flex flex-wrap items-center gap-3">
+          <label for="image-file" class="inline-flex items-center gap-2 rounded-lg border border-dashed border-gray-300 bg-gray-50 hover:bg-gray-100 px-3.5 py-2 text-sm text-gray-500 cursor-pointer transition-colors duration-150">
+            <svg viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4 text-gray-400"><path d="M9.25 13.25a.75.75 0 001.5 0V4.636l2.955 3.129a.75.75 0 001.09-1.03l-4.25-4.5a.75.75 0 00-1.09 0l-4.25 4.5a.75.75 0 101.09 1.03L9.25 4.636v8.614z"/><path d="M3.5 12.75a.75.75 0 00-1.5 0v2.5A2.75 2.75 0 004.75 18h10.5A2.75 2.75 0 0018 15.25v-2.5a.75.75 0 00-1.5 0v2.5c0 .69-.56 1.25-1.25 1.25H4.75c-.69 0-1.25-.56-1.25-1.25v-2.5z"/></svg>
+            <span id="image-label">Upload image</span>
+          </label>
+          <input id="image-file" type="file" accept="image/png,image/jpeg,image/webp" class="hidden" />
+
+          <button id="paste-image-btn" type="button" class="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 px-3.5 py-2 text-sm text-gray-600 transition-all duration-150 active:scale-[0.97]">
+            <svg viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4 text-gray-400"><path fill-rule="evenodd" d="M5.5 2A1.5 1.5 0 004 3.5v1A2.5 2.5 0 001.5 7v8A2.5 2.5 0 004 17.5h8a2.5 2.5 0 002.5-2.5H16a2.5 2.5 0 002.5-2.5v-8A2.5 2.5 0 0016 2H5.5zm9 13.5H4A.5.5 0 013.5 15V7A.5.5 0 014 6.5h8a.5.5 0 01.5.5v8.5zm0-2V7A2.5 2.5 0 0012 4.5H5.5v-1H16a.5.5 0 01.5.5v8a.5.5 0 01-.5.5h-1.5z" clip-rule="evenodd"/></svg>
+            Paste image
+          </button>
+
+          <span class="text-xs text-gray-400">or press Ctrl+V / drag & drop</span>
+
+          <div class="flex-1"></div>
+
+          <button id="clear-btn" class="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-800 transition-all duration-150 active:scale-[0.97]">
+            Clear
+          </button>
+          <button id="solve-btn" class="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-red-500 to-rose-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-red-300/50 hover:shadow-red-400/60 hover:from-red-600 hover:to-rose-700 transition-all duration-200 active:scale-[0.97] disabled:opacity-50 disabled:pointer-events-none">
+            <span id="solve-label">Solve</span>
+            <span id="solve-spinner" class="hidden">
+              <svg class="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+            </span>
+          </button>
+        </div>
+
+        <!-- Example chips -->
+        <div class="flex flex-wrap items-center gap-2 pt-1">
+          <span class="text-xs text-gray-400 font-medium">Try:</span>
+          <button class="chip" data-q="If α and β are roots of x² − 6x + 1 = 0, find α⁷ + β⁷.">Algebra · roots</button>
+          <button class="chip" data-q="Evaluate lim_{x→0} (sin x − x cos x) / x³.">Limits</button>
+          <button class="chip" data-q="A bag has 4 red and 6 white balls. 3 drawn at random. P(exactly 2 red | at least 1 red)?">Probability</button>
+          <button class="chip" data-q="Find the area between y = x² and y = 2x − x².">Area · curves</button>
+          <button class="chip" data-q="Find all values of k for which the equation x³ − 3x + k = 0 has three distinct real roots.">Cubic · roots</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== TIMELINE + LOGS ===== -->
+  <main class="mx-auto max-w-7xl px-5 pb-10 grid gap-5 lg:grid-cols-5">
+    <!-- Timeline (wider) -->
+    <section class="lg:col-span-3 rounded-2xl border border-gray-200 bg-white shadow-lg shadow-gray-100/60">
+      <div class="px-5 pt-5 flex items-center justify-between">
+        <div>
+          <h2 class="text-[15px] font-bold text-gray-900">Reasoning Timeline</h2>
+          <p class="text-xs text-gray-400 mt-0.5">Multi-stage trace from the solver</p>
+        </div>
+        <div id="timeline-meta" class="text-xs text-gray-400 font-mono"></div>
+      </div>
+      <div id="timeline" class="px-5 pb-5 pt-3 space-y-3 min-h-[220px]">
+        <div id="empty-state" class="relative grid place-items-center text-center text-sm text-gray-400 py-14 rounded-xl border-2 border-dashed border-gray-200 bg-gray-50/50">
+          <div>
+            <svg viewBox="0 0 24 24" class="w-8 h-8 mx-auto mb-3 text-gray-300" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
+            </svg>
+            Submit a problem to see reasoning unfold
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Logs (narrower) -->
+    <section class="lg:col-span-2 rounded-2xl border border-gray-200 bg-white shadow-lg shadow-gray-100/60">
+      <div class="px-5 pt-5 flex items-center justify-between">
+        <div>
+          <h2 class="text-[15px] font-bold text-gray-900">Logs</h2>
+          <p class="text-xs text-gray-400 mt-0.5">loguru stream</p>
+        </div>
+        <div class="flex items-center gap-2">
+          <button id="logs-clear" class="text-xs text-gray-400 hover:text-gray-600 transition">clear</button>
+          <button id="logs-toggle" class="text-xs text-gray-400 hover:text-gray-600 transition">collapse</button>
+        </div>
+      </div>
+      <div id="logs" class="logs-panel mx-5 mb-5 mt-3"></div>
+    </section>
+  </main>
+
+
+  <!-- ===== PROMPT QUALIFICATION DRAWER ===== -->
+  <div id="qual-drawer" class="qual-drawer">
+    <div class="qual-header">
+      <h3>
+        <svg viewBox="0 0 24 24" class="w-5 h-5 text-red-500" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M9 11l3 3L22 4"></path>
+          <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"></path>
+        </svg>
+        Prompt Qualification
+      </h3>
+      <button id="qual-close" class="qual-close">&times;</button>
+    </div>
+    <div class="qual-body">
+      <p class="qual-desc">Evaluation of the system prompt based on the 9-criterion rubric. This ensures the LLM reasons step-by-step.</p>
+      
+      <ul class="qual-list">
+        <li class="qual-item true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+          <div><span class="qual-item-title">Explicit Reasoning Instructions</span>Tells the model to reason step-by-step.</div>
+        </li>
+        <li class="qual-item true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+          <div><span class="qual-item-title">Structured Output Format</span>Enforces a predictable JSON output format.</div>
+        </li>
+        <li class="qual-item true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+          <div><span class="qual-item-title">Separation of Reasoning & Tools</span>Reasoning steps are split from computation.</div>
+        </li>
+        <li class="qual-item true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+          <div><span class="qual-item-title">Conversation Loop Support</span>Prompt works in a back-and-forth setting.</div>
+        </li>
+        <li class="qual-item true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+          <div><span class="qual-item-title">Instructional Framing</span>Provides clear format and examples.</div>
+        </li>
+        <li class="qual-item true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+          <div><span class="qual-item-title">Internal Self-Checks</span>Mandates an independent verification stage.</div>
+        </li>
+        <li class="qual-item true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+          <div><span class="qual-item-title">Reasoning Type Awareness</span>Requires reasoning type tags (e.g., logic, calculus).</div>
+        </li>
+        <li class="qual-item true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+          <div><span class="qual-item-title">Error Handling or Fallbacks</span>Includes fallback instructions for uncertainty.</div>
+        </li>
+      </ul>
+
+      <div class="qual-clarity" style="background: #ecfdf5; border-color: #a7f3d0; color: #065f46;">
+        <strong style="color: #064e3b;">Overall Clarity</strong>
+        Strong: 5-stage pipeline, mandatory reasoning_type tags on every step, explicit verification stage, JSON-only output for easy parsing, and an uncertainty/rejection fallback path. The prompt is reusable in a multi-turn loop because each stage is independently parseable.
+      </div>
+    </div>
+  </div>
+  <div id="qual-overlay" class="qual-overlay"></div>
+
+  <script src="/static/app.js?v=6"></script>
+</body>
+
+</html>
