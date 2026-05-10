@@ -19,6 +19,12 @@ loaded verbatim by the server from [`app/prompts.py`](./app/prompts.py).
 
 ---
 
+### 🎥 Video Demo
+Check out the full walkthrough of the JEE-Solver in action:
+**[Watch on YouTube](https://youtu.be/0WA0MPFF92M)**
+
+---
+
 ### Reference Questions
 https://www.askiitians.com/iit-jee-2009-solutions/iit-jee-2009-mathematics-paper2-solutions-page4.aspx
 
